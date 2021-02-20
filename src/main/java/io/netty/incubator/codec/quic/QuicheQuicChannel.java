@@ -147,6 +147,8 @@ final class QuicheQuicChannel extends AbstractChannel implements QuicChannel {
     private static final int ACTIVE = 2;
     private volatile int state;
     private volatile String traceId;
+    private volatile long uniStreamsLeft;
+    private volatile long bidiStreamsLeft;
 
     private QuicheQuicChannel(Channel parent, boolean server, ByteBuffer key,
                       InetSocketAddress remote, boolean supportsDatagram, ChannelHandler streamHandler,
@@ -179,6 +181,18 @@ final class QuicheQuicChannel extends AbstractChannel implements QuicChannel {
                                        Map.Entry<AttributeKey<?>, Object>[] streamAttrsArray) {
         return new QuicheQuicChannel(parent, true, key, remote, supportsDatagram,
                 streamHandler, streamOptionsArray, streamAttrsArray);
+    }
+
+    @Override
+    public long peerAllowedStreams(QuicStreamType type) {
+        switch (type) {
+            case BIDIRECTIONAL:
+                return bidiStreamsLeft;
+            case UNIDIRECTIONAL:
+                return uniStreamsLeft;
+            default:
+                return 0;
+        }
     }
 
     void attachQuicheConnection(QuicheQuicConnection connection) {
@@ -976,6 +990,11 @@ final class QuicheQuicChannel extends AbstractChannel implements QuicChannel {
                 promise.setFailure(e);
                 return;
             }
+            if (type == QuicStreamType.UNIDIRECTIONAL) {
+                uniStreamsLeft--;
+            } else {
+                bidiStreamsLeft--;
+            }
             QuicheQuicStreamChannel streamChannel = addNewStreamChannel(streamId);
             if (handler != null) {
                 streamChannel.pipeline().addLast(handler);
@@ -1091,6 +1110,18 @@ final class QuicheQuicChannel extends AbstractChannel implements QuicChannel {
 
                         if (Quiche.quiche_conn_is_established(connAddr) ||
                                 Quiche.quiche_conn_is_in_early_data(connAddr)) {
+                            long uniLeftOld = uniStreamsLeft;
+                            long bidiLeftOld = bidiStreamsLeft;
+                            // Only fetch new stream info when we used all our credits
+                            if (uniLeftOld == 0 || bidiLeftOld == 0) {
+                                long uniLeft = Quiche.quiche_conn_peer_streams_left_uni(connAddr);
+                                long bidiLeft = Quiche.quiche_conn_peer_streams_left_bidi(connAddr);
+                                uniStreamsLeft = uniLeft;
+                                bidiStreamsLeft = bidiLeft;
+                                if (uniLeftOld != uniLeft || bidiLeftOld != bidiLeft) {
+                                    pipeline().fireUserEventTriggered(QuicStreamLimitChangedEvent.INSTANCE);
+                                }
+                            }
 
                             if (handleWritableStreams()) {
                                 // Some data was produced, let's flush.
