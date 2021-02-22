@@ -1,0 +1,26 @@
+dnl ---------------------------------------------------------------------------
+dnl  Copyright (C) 2009-2011 FuseSource Corp.
+dnl  http://fusesource.com
+dnl  
+dnl  Licensed under the Apache License, Version 2.0 (the "License");
+dnl  you may not use this file except in compliance with the License.
+dnl  You may obtain a copy of the License at
+dnl  
+dnl     http://www.apache.org/licenses/LICENSE-2.0
+dnl  
+dnl  Unless required by applicable law or agreed to in writing, software
+dnl  distributed under the License is distributed on an "AS IS" BASIS,
+dnl  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+dnl  See the License for the specific language governing permissions and
+dnl  limitations under the License.
+dnl ---------------------------------------------------------------------------
+
+AC_DEFUN([CUSTOM_M4_SETUP],
+[
+
+    # When using the android toolchain, by default it only builds a library with a version-suffix.
+    # This way we create a symlink without the version-suffix, so hawtjni can find the library and copy it to the output destination
+    # This sets the "library_names_spec" variable in libtool to the same value as when building for linux
+    _LT_TAGVAR(library_names_spec, )="\${libname}\${release}\${shared_ext}\$versuffix \${libname}\${release}\${shared_ext}\$major \$libname\${shared_ext}"
+
+])
