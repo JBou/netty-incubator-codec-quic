@@ -35,7 +35,7 @@ import org.junit.Test;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLHandshakeException;
-import javax.net.ssl.X509ExtendedTrustManager;
+import javax.net.ssl.X509TrustManager;
 import java.io.File;
 import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
@@ -352,7 +352,7 @@ public class QuicChannelConnectTest extends AbstractQuicTest {
                 .trustManager(new TrustManagerFactoryWrapper(new TestTrustManager() {
 
                     @Override
-                    public void checkServerTrusted(X509Certificate[] chain, String authType, SSLEngine engine)
+                    public void checkServerTrusted(X509Certificate[] chain, String authType)
                             throws CertificateException {
                         throw new CertificateException();
                     }
@@ -587,30 +587,7 @@ public class QuicChannelConnectTest extends AbstractQuicTest {
         }
     }
 
-    private abstract static class TestTrustManager extends X509ExtendedTrustManager {
-        @Override
-        public void checkClientTrusted(X509Certificate[] chain, String authType, Socket socket)
-                throws CertificateException {
-            // NOOP
-        }
-
-        @Override
-        public void checkServerTrusted(X509Certificate[] chain, String authType, Socket socket)
-                throws CertificateException {
-            // NOOP
-        }
-
-        @Override
-        public void checkClientTrusted(X509Certificate[] chain, String authType, SSLEngine engine)
-                throws CertificateException {
-            // NOOP
-        }
-
-        @Override
-        public void checkServerTrusted(X509Certificate[] chain, String authType, SSLEngine engine)
-                throws CertificateException {
-            // NOOP
-        }
+    private abstract static class TestTrustManager implements X509TrustManager {
 
         @Override
         public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
