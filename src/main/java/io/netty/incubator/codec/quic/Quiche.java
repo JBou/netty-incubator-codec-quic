@@ -53,6 +53,11 @@ final class Quiche {
         String libName = "netty_quiche" + '_' + PlatformDependent.normalizedOs()
                 + '_' + PlatformDependent.normalizedArch();
         ClassLoader cl = PlatformDependent.getClassLoader(Quiche.class);
+
+        if (PlatformDependent.isAndroid()) {
+            libName = "netty_quiche";
+        }
+
         try {
             NativeLibraryLoader.load(libName, cl);
         } catch (UnsatisfiedLinkError e) {
